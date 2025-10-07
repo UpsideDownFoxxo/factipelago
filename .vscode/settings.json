@@ -1,0 +1,13 @@
+{
+    "factorio.versions": [
+        {
+            "name": "A",
+            "factorioPath": "/home/fox/dev/factorio-modding/factorio-2/bin/x64/factorio",
+            "active": true
+        }
+    ],
+    "Lua.workspace.userThirdParty": [
+        "/home/fox/.config/Code/User/workspaceStorage/f7affc949781411f1fe4efff508954e2/justarandomgeek.factoriomod-debug/sumneko-3rd"
+    ],
+    "Lua.workspace.checkThirdParty": "ApplyInMemory"
+}

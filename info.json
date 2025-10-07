@@ -1,0 +1,9 @@
+{
+  "name": "factipelago",
+  "version": "0.0.0",
+  "title": "Factipelago",
+  "author": "Foxxo",
+  "description": "",
+  "factorio_version": "2.0",
+  "dependencies": ["base", "flib"]
+}

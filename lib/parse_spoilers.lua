@@ -94,41 +94,47 @@ m.get_teams = function()
 	return team_sections
 end
 
+local mappings
 m.get_tech_mappings = function()
-	local tech_section
-	for _, section in ipairs(m.get_sections()) do
-		if section[1] == "Locations:" then
-			section = table.deepcopy(section)
-			table.remove(section, 1)
-			tech_section = section
-			goto run
+	if not mappings then
+		local tech_section
+		for _, section in ipairs(m.get_sections()) do
+			if section[1] == "Locations:" then
+				section = table.deepcopy(section)
+				table.remove(section, 1)
+				tech_section = section
+				goto run
+			end
 		end
+
+		error("Could not find location section")
+
+		::run::
+		local links = {}
+
+		for _, line in ipairs(tech_section) do
+			local location, from_team, unlock, to_team = line:match("^(%S+) %(([^%)]+)%): (.+) %(([^%)]+)%)")
+			if not location then
+				goto continue
+			end
+			local ident = from_team .. "-" .. location
+			links[ident] = links[ident] or {}
+			links[ident][to_team] = links[ident][to_team] or { traps = {}, techs = {} }
+
+			if unlock:match(".*Trap") then
+				table.insert(links[ident][to_team].traps, unlock)
+			else
+				table.insert(links[ident][to_team].techs, unlock)
+			end
+
+			::continue::
+		end
+
+		mappings = links
+		return links
 	end
 
-	error("Could not find location section")
-
-	::run::
-	local links = {}
-
-	for _, line in ipairs(tech_section) do
-		local location, from_team, unlock, to_team = line:match("^(%S+) %(([^%)]+)%): (.+) %(([^%)]+)%)")
-		if not location then
-			goto continue
-		end
-		local ident = from_team .. "-" .. location
-		links[ident] = links[ident] or {}
-		links[ident][to_team] = links[ident][to_team] or { traps = {}, techs = {} }
-
-		if unlock:match(".*Trap") then
-			table.insert(links[ident][to_team].traps, unlock)
-		else
-			table.insert(links[ident][to_team].techs, unlock)
-		end
-
-		::continue::
-	end
-
-	return links
+	return mappings
 end
 
 m.ap_to_factorio = function(id)

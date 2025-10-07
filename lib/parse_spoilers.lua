@@ -2,7 +2,7 @@ SECTION_CACHE = nil
 
 ---@module "lib/base64"
 local b64 = require("lib/base64")
-local lz = require("lib/lzw")
+local lz4 = require("lib/lz4")
 
 local m = {}
 
@@ -21,7 +21,7 @@ local data_table
 m.get_setting_data = function()
 	if not data_table then
 		local compressed_spoiler = b64.decode(settings.startup["spoilers"].value)
-		local raw_spoiler = lz.decompress(compressed_spoiler)
+		local raw_spoiler = lz4.decompress(compressed_spoiler)
 		local t = helpers.json_to_table(raw_spoiler)
 
 		if not _G.data then

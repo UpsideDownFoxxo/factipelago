@@ -86,9 +86,11 @@ m.disassociate_player = function(player)
 		---@diagnostic disable-next-line: assign-type-mismatch
 		force = player.force,
 		death_location = player.ticks_to_respawn and player.position or nil,
-		opened = player.opened or (player.opened_self and "self"),
+		opened = player.opened or (player.opened_self and "self") or nil,
 		tag = player.tag,
 	}
+
+	player.opened = nil
 
 	unlink_corpses(player)
 
@@ -160,15 +162,13 @@ m.associate_player = function(player, team, slot)
 	player.chat_color = player_data.chat_color
 	player.tag = player_data.tag
 
-	if player_data.opened then
-		if player_data.opened == "self" then
-			player.opened = player
-		else
-			if player_data.opened.valid then
-				player.opened = player_data.opened
-			end
-		end
+	if player_data.opened == "self" then
+		player_data.opened = player
+	elseif player_data.opened and not player_data.opened.valid then
+		player_data.opened = nil
 	end
+
+	player.opened = player_data.opened
 
 	relink_corpses(player)
 end

@@ -1,7 +1,7 @@
 local samples = require("lib/samples")
 local m = require("lib/per_force_players")
 
----@alias StashedData {quickbar_pages:number[],quickbar_slots:unknown[],death_location:MapPosition?,ticks_to_respawn:number?,color:Color,chat_color:Color,opened:unknown,force:LuaForce,tag:string}
+---@alias StashedData {quickbar_pages:number[],quickbar_slots:unknown[],death_location:MapPosition?,ticks_to_respawn:number?,color:Color,chat_color:Color,opened:unknown,force:LuaForce,tag:string,controller_type:defines.controllers,position:MapPosition,zoom:number}
 
 local function get_corpse_index(team, slot)
 	storage.current_corpse_index = storage.current_corpse_index or 10000
@@ -49,6 +49,7 @@ local function unlink_corpses(player)
 
 			-- copy inventory
 			for _, stack in ipairs(old_inv.get_contents()) do
+				---@diagnostic disable-next-line: param-type-mismatch
 				new_inv.insert(stack)
 			end
 
@@ -88,6 +89,9 @@ m.disassociate_player = function(player)
 		death_location = player.ticks_to_respawn and player.position or nil,
 		opened = player.opened or (player.opened_self and "self") or nil,
 		tag = player.tag,
+		controller_type = player.controller_type,
+		position = player.position,
+		zoom = player.zoom,
 	}
 
 	player.opened = nil
@@ -171,6 +175,13 @@ m.associate_player = function(player, team, slot)
 	player.opened = player_data.opened
 
 	relink_corpses(player)
+
+	player.zoom = player_data.zoom
+
+	if player_data.controller_type == defines.controllers.remote then
+		player.set_controller({ type = defines.controllers.remote })
+		player.teleport(player_data.position)
+	end
 end
 
 -- HSV to RGB
@@ -253,6 +264,7 @@ m.get_or_make_empty_slot = function(team, player)
 		chat_color = chat_color,
 		force = game.forces[team],
 		tag = "",
+		zoom = 1,
 	}
 
 	samples.catch_up_slot(team, slot)

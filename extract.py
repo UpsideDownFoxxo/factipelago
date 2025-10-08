@@ -1,3 +1,4 @@
+import sys
 from zipfile import ZipFile
 import base64
 import json
@@ -49,7 +50,10 @@ def extract_multiworld_data(input):
 
 
 if __name__ == "__main__":
-    path = "/home/fox/.local/share/Archipelago/output/AP_39786475013693021975.zip"
+    if len(sys.argv) < 2:
+        print("Please provide a multiworld zip")
+        exit(-1)
+    path = sys.argv[1]
     json_str = json.dumps(extract_multiworld_data(path))
 
     comp = block.compress(json_str.encode("utf-8"), store_size=False)

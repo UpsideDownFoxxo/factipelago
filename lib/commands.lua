@@ -60,3 +60,12 @@ commands.add_command("tag", { "command-help.tag" }, function(event)
 
 	player.tag = event.parameter or ""
 end)
+
+commands.add_command("swap_interval", { "command-help.swap_interval" }, function(event)
+	local new_interval = tonumber(event.parameter or "")
+	if not new_interval then
+		game.players[event.player_index].print("Failed to parse number '" .. event.parameter .. "'")
+		return
+	end
+	game_manager.set_swap_interval(math.ceil(new_interval))
+end)

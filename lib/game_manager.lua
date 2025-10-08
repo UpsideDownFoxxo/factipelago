@@ -1,6 +1,6 @@
 local slot_manager = require("lib/slot_manager")
 local samples = require("lib/samples")
-local parse_spoilers = require("lib.parse_spoilers")
+local parse_spoilers = require("lib/parse_spoilers")
 local m = {}
 
 m.swap_random_players = function(team_a, team_b)
@@ -220,4 +220,21 @@ m.trigger_death_link = function(initial_dead_player, from_team)
 	storage.death_link_active = nil
 end
 
+m.swap_handler = function()
+	m.swap_random_teams()
+	m.balance_teams()
+end
+
+---@param ticks int
+m.set_swap_interval = function(ticks)
+	-- remove old handler
+	script.on_nth_tick(nil)
+
+	if ticks == 0 then
+		storage.swap_interval = nil
+	else
+		script.on_nth_tick(ticks, m.swap_handler)
+		storage.swap_interval = ticks
+	end
+end
 return m

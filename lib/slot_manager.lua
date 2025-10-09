@@ -76,6 +76,7 @@ end
 
 ---@param player LuaPlayer
 m.disassociate_player = function(player)
+	print("disassociating " .. player.name)
 	-- record player data
 	---@type StashedData
 	local old_player_data = {
@@ -120,12 +121,18 @@ m.disassociate_player = function(player)
 	if old_character then
 		old_character.color = player.color
 	end
+
+	print(serpent.block(storage.team_player_slots))
+	print(serpent.block(storage.stashed_character_data))
 end
 
 ---@param player LuaPlayer
 ---@param team string
 ---@param slot number
 m.associate_player = function(player, team, slot)
+	print("associating " .. player.name .. " with " .. team .. ":" .. slot)
+	print(serpent.block(storage.team_player_slots))
+	print(serpent.block(storage.stashed_character_data))
 	local character = storage.team_player_slots[team].characters[slot]
 	local player_data = storage.stashed_character_data[team][slot]
 

@@ -189,8 +189,15 @@ end
 
 local ap_teams = parse_spoilers.get_teams()
 
-m.trigger_death_link = function(initial_dead_player, from_team)
+---@param initial_dead_player_name LocalisedString
+---@param from_team string
+---@param initial_dead_player LuaPlayer
+m.trigger_death_link = function(initial_dead_player_name, from_team, initial_dead_player)
+	-- create empty player-like object we can call print on
+	initial_dead_player = initial_dead_player or { print = function(...) end }
+
 	storage.death_link_active = true
+	local deaths = 0
 	for team, team_settings in pairs(ap_teams) do
 		if team_settings["Death Link"] == "No" then
 			goto continue
@@ -201,23 +208,41 @@ m.trigger_death_link = function(initial_dead_player, from_team)
 		local characters = storage.team_player_slots[team].characters
 		for slot, character in pairs(characters) do
 			if character.valid then
+				local should_die = math.random() < (settings.global["death-percent"].value / 100)
 				local player_index = players[slot]
 				if player_index ~= -1 then
 					local player = game.get_player(player_index)
 					assert(player)
 
-					player.print({ "player-messages.death-link", initial_dead_player, from_team })
+					if should_die then
+						print("killing " .. player.name)
+						player.print({ "player-messages.death-link", initial_dead_player_name, from_team })
+					else
+						print("sparing " .. player.name)
+						player.print({ "player-messages.death-link-failed", initial_dead_player_name, from_team })
+					end
 				end
 
-				character.die()
+				if should_die then
+					print("killing character " .. team .. ":" .. slot)
+					character.die()
+					deaths = deaths + 1
+					characters[slot] = nil
+				end
 			end
-
-			characters[slot] = nil
 		end
 
 		::continue::
 	end
 	storage.death_link_active = nil
+
+	local all_players = #game.connected_players - 1
+
+	if deaths == all_players then
+		initial_dead_player.print({ "player-messages.death-link-report-wipeout", deaths })
+	else
+		initial_dead_player.print({ "player-messages.death-link-report", deaths })
+	end
 end
 
 m.swap_handler = function()

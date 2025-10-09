@@ -17,10 +17,11 @@ local function split(input)
 end
 
 local data_table
+local seed = require("seed")
 
 m.get_setting_data = function()
 	if not data_table then
-		local compressed_spoiler = b64.decode(settings.startup["spoilers"].value)
+		local compressed_spoiler = b64.decode(seed)
 		local raw_spoiler = lz4.decompress(compressed_spoiler)
 		local t = helpers.json_to_table(raw_spoiler)
 

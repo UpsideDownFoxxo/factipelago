@@ -48,6 +48,21 @@ local function apply_map_gen_settings(copy_from, new_settings)
 	return preset
 end
 
+---@param tech_name string
+---@param force LuaForce
+---@param team_name string
+---@return string
+local function research_team_technology(tech_name, force)
+	if tech_name:match("^progressive%-") then
+		return progressive_techs.research_progressive_tech(tech_name, force)
+	else
+		-- try and see if a personalized version exists. if yes we have to prefer it over the normal one
+		local tech = force.technologies[force.name .. "-" .. tech_name] or force.technologies[tech_name]
+		tech.researched = true
+		return tech.name
+	end
+end
+
 ---@param event EventData.on_research_finished
 script.on_event(defines.events.on_research_finished, function(event)
 	local name = event.research.name
@@ -70,14 +85,7 @@ script.on_event(defines.events.on_research_finished, function(event)
 		local team_traps = team_effects.traps
 
 		for _, tech_name in pairs(team_techs) do
-			if tech_name:match("^progressive%-") then
-				tech_name = progressive_techs.research_progressive_tech(tech_name, force)
-			else
-				-- try and see if a personalized version exists. if yes we have to prefer it over the normal one
-				local tech = force.technologies[team_name .. "-" .. tech_name] or force.technologies[tech_name]
-				tech_name = tech.name
-				tech.researched = true
-			end
+			tech_name = research_team_technology(tech_name, force)
 
 			if event.research.force.index ~= force.index then
 				for _, player in ipairs(event.research.force.connected_players) do
@@ -153,6 +161,13 @@ local function on_force_created(event)
 		starting_items[item] = count
 	end
 
+	-- research starter technologies
+	for item, count in team_data["Start Inventory"]:gmatch("([^:]*): (%d*),?%s?") do
+		for _ = 1, count, 1 do
+			research_team_technology(item, event.force)
+		end
+	end
+
 	storage.team_samples[team_name] = starting_items
 end
 
@@ -163,11 +178,11 @@ script.on_init(function()
 	if game.is_multiplayer() then
 		game.tick_paused = true
 	end
-
-	if settings.startup.spoilers.value == "Enter Here" then
-		error("No spoiler data provided")
-	end
-
+	--
+	-- if settings.startup.spoilers.value == "Enter Here" then
+	-- 	error("No spoiler data provided")
+	-- end
+	--
 	local teams = parse_spoilers.get_teams()
 	storage.active_teams = {}
 	for team, _ in pairs(teams) do
@@ -248,6 +263,7 @@ script.on_event(defines.events.on_entity_died, function(event)
 	if event.entity.name ~= "character" then
 		return
 	end
+
 	local slot
 	local team
 	-- character died, check through slots to see who it was
@@ -275,21 +291,28 @@ script.on_event(defines.events.on_entity_died, function(event)
 
 	if not storage.death_link_active then
 		local player_index = storage.team_player_slots[team].players[slot]
+		local player
 
 		---@type LocalisedString
 		local responsible = { "player-messages.no-player-character-name" }
 
 		if player_index ~= -1 then
-			responsible = game.get_player(player_index).name
+			player = game.get_player(player_index)
+			assert(player)
+			responsible = player.name
 		end
 
-		game_manager.trigger_death_link(responsible, team)
+		print(type(responsible))
+
+		game_manager.trigger_death_link(responsible, team, player)
 	end
 end)
 
 script.on_event(defines.events.on_player_respawned, function(event)
 	local player = game.get_player(event.player_index)
 	assert(player)
+
+	print(player.name .. " respawned")
 
 	local team, slot = slot_manager.get_player_slot(player)
 
@@ -303,6 +326,7 @@ script.on_event(defines.events.on_player_respawned, function(event)
 		if old_character then
 			old_character.destroy()
 		end
+
 		return
 	end
 
@@ -311,6 +335,7 @@ script.on_event(defines.events.on_player_respawned, function(event)
 		"Player " .. player.name .. " respawned without valid character"
 	)
 
+	print("registered new character for " .. player.name)
 	storage.team_player_slots[team].characters[slot] = player.character
 end)
 

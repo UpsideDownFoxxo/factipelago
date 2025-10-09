@@ -6,19 +6,37 @@ local ap_teams = parse_spoilers.get_teams()
 
 local traps = require("lib/traps")
 
+-- admin only
+local function admin_check(event)
+	local player = game.players[event.player_index]
+	assert(player)
+
+	return player.admin
+end
+
 ---@type CustomCommandData
-commands.add_command("swap", "", function()
+commands.add_command("swap", "", function(event)
+	if not admin_check(event) then
+		return
+	end
+
 	game_manager.swap_random_teams()
 end)
 
 ---@type CustomCommandData
-commands.add_command("balance", "", function()
+commands.add_command("balance", "", function(event)
+	if not admin_check(event) then
+		return
+	end
 	game_manager.balance_teams()
 end)
 
 ---@type CustomCommandData
-commands.add_command("transfer", "", function(data)
-	local team = data.parameter
+commands.add_command("transfer", "", function(event)
+	if not admin_check(event) then
+		return
+	end
+	local team = event.parameter
 
 	if not team or not game.forces[team] then
 		game.print("Cannot transfer to this force")
@@ -26,14 +44,17 @@ commands.add_command("transfer", "", function(data)
 	end
 
 	---@type LuaPlayer
-	local player = game.players[data.player_index]
+	local player = game.players[event.player_index]
 
 	slot_manager.transfer_player(player, team)
 end)
 
----@param data CustomCommandData
-commands.add_command("trigger_trap", "", function(data)
-	local player = game.players[data.player_index]
+---@param event CustomCommandData
+commands.add_command("trigger_trap", "", function(event)
+	if not admin_check(event) then
+		return
+	end
+	local player = game.players[event.player_index]
 	---@type LuaForce
 	local force = player.force
 
@@ -46,26 +67,30 @@ commands.add_command("trigger_trap", "", function(data)
 		end
 	end
 
-	local trap = traps[data.parameter]
+	local trap = traps[event.parameter]
 	if not trap then
 		player.print("Don't know that trap, sorry")
 		return
 	end
-	trap(player_team, game.players[data.player_index].name)
-end)
-
-commands.add_command("tag", { "command-help.tag" }, function(event)
-	local player = game.get_player(event.player_index)
-	assert(player)
-
-	player.tag = event.parameter or ""
+	trap(player_team, game.players[event.player_index].name)
 end)
 
 commands.add_command("swap_interval", { "command-help.swap_interval" }, function(event)
+	if not admin_check(event) then
+		return
+	end
 	local new_interval = tonumber(event.parameter or "")
 	if not new_interval then
 		game.players[event.player_index].print("Failed to parse number '" .. event.parameter .. "'")
 		return
 	end
 	game_manager.set_swap_interval(math.ceil(new_interval))
+end)
+
+-- all players
+commands.add_command("tag", { "command-help.tag" }, function(event)
+	local player = game.get_player(event.player_index)
+	assert(player)
+
+	player.tag = event.parameter or ""
 end)

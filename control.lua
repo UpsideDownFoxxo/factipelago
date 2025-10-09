@@ -159,6 +159,11 @@ end
 script.on_event(defines.events.on_force_created, on_force_created)
 
 script.on_init(function()
+	-- pause at the start if we expect more players
+	if game.is_multiplayer() then
+		game.tick_paused = true
+	end
+
 	if settings.startup.spoilers.value == "Enter Here" then
 		error("No spoiler data provided")
 	end

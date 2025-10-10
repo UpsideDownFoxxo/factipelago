@@ -161,6 +161,7 @@ local function on_force_created(event)
 		starting_items[item] = count
 	end
 
+	storage.team_samples[team_name] = starting_items
 	-- research starter technologies
 	for item, count in team_data["Start Inventory"]:gmatch("([^:]*): (%d*),?%s?") do
 		for _ = 1, count, 1 do
@@ -168,7 +169,6 @@ local function on_force_created(event)
 		end
 	end
 
-	storage.team_samples[team_name] = starting_items
 end
 
 script.on_event(defines.events.on_force_created, on_force_created)

@@ -144,12 +144,13 @@ m.catch_up_slot = function (team,slot)
   end
 end
 
-script.on_nth_tick(240,function ()
+m.swample_update_handler = function ()
   for team, slots in pairs(storage.team_player_slots) do
-    for slot, _ in ipairs(slots.players) do
-      m.try_insert_pending_samples(team,slot)
-    end
-  end
-end)
+		for slot, _ in ipairs(slots.players) do
+			m.try_insert_pending_samples(team, slot)
+		end
+	end
+
+end
 
 return m

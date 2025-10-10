@@ -392,10 +392,3 @@ script.on_event(defines.events.on_rocket_launched, function(event)
 
 	game_manager.set_team_won(event.rocket.force.name)
 end)
-
--- for players reconnecting
-script.on_load(function()
-	if storage.swap_interval then
-		script.on_nth_tick(storage.swap_interval, game_manager.swap_handler)
-	end
-end)

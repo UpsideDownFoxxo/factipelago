@@ -250,16 +250,47 @@ m.swap_handler = function()
 	m.balance_teams()
 end
 
+script.on_nth_tick(240, samples.swample_update_handler)
+
 ---@param ticks int
 m.set_swap_interval = function(ticks)
 	-- remove old handler
 	script.on_nth_tick(nil)
 
-	if ticks == 0 then
-		storage.swap_interval = nil
-	else
-		script.on_nth_tick(ticks, m.swap_handler)
-		storage.swap_interval = ticks
+	---@type int?
+	local t = ticks
+
+	if t == 0 then
+		t = nil
 	end
+
+	if t == 240 then
+		script.on_nth_tick(240, function()
+			m.swap_handler()
+			samples.swample_update_handler()
+		end)
+	else
+		if t then
+			script.on_nth_tick(t, m.swap_handler)
+		end
+
+		script.on_nth_tick(240, samples.swample_update_handler)
+	end
+	storage.swap_interval = t
 end
+
+-- for players reconnecting
+script.on_load(function()
+	if storage.swap_interval == 240 then
+		script.on_nth_tick(240, function()
+			m.swap_handler()
+			samples.swample_update_handler()
+		end)
+	else
+		if storage.swap_interval then
+			script.on_nth_tick(storage.swap_interval, m.swap_handler)
+		end
+	end
+end)
+
 return m

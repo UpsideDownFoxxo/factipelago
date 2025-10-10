@@ -392,3 +392,31 @@ script.on_event(defines.events.on_rocket_launched, function(event)
 
 	game_manager.set_team_won(event.rocket.force.name)
 end)
+
+script.on_event(defines.events.on_console_chat, function(event)
+	if not event.player_index or event.player_index == 0 then
+		return
+	end
+
+	local shout_player = game.get_player(event.player_index)
+	assert(shout_player)
+
+	local color = shout_player.chat_color
+
+	local team = slot_manager.get_player_slot(shout_player) or { "player-messages.chat-no-team" }
+
+	for _, player in pairs(game.connected_players) do
+		if player.index == shout_player.index then
+			goto continue
+		end
+
+		player.print({
+			"player-messages.chat",
+			("%f,%f,%f"):format(color.r, color.g, color.b),
+			("[%s] %s"):format(team, shout_player.name),
+			event.message,
+		})
+
+		::continue::
+	end
+end)

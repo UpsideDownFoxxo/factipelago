@@ -50,7 +50,6 @@ end
 
 ---@param tech_name string
 ---@param force LuaForce
----@param team_name string
 ---@return string
 local function research_team_technology(tech_name, force)
 	if tech_name:match("^progressive%-") then
@@ -64,7 +63,7 @@ local function research_team_technology(tech_name, force)
 end
 
 ---@param event EventData.on_research_finished
-script.on_event(defines.events.on_research_finished, function(event)
+local function on_research_finished(event)
 	local name = event.research.name
 	-- not an AP tech, check for samples
 	if not name:match("^.*%-ap%-") then
@@ -87,6 +86,10 @@ script.on_event(defines.events.on_research_finished, function(event)
 		for _, tech_name in pairs(team_techs) do
 			tech_name = research_team_technology(tech_name, force)
 
+			if not team_name then
+				goto continue
+			end
+
 			if event.research.force.index ~= force.index then
 				for _, player in ipairs(event.research.force.connected_players) do
 					player.print({ "player-messages.sent-tech-notification", team_name, tech_name })
@@ -96,6 +99,11 @@ script.on_event(defines.events.on_research_finished, function(event)
 			for _, player in ipairs(force.connected_players) do
 				player.print({ "player-messages.received-tech-notification", event.research.force.name, tech_name })
 			end
+			::continue::
+		end
+
+		if event.tick == 0 then
+			goto continue
 		end
 
 		for _, trap_name in ipairs(team_traps) do
@@ -117,7 +125,13 @@ script.on_event(defines.events.on_research_finished, function(event)
 				end
 			end
 		end
+		::continue::
 	end
+end
+
+---@param event EventData.on_research_finished
+script.on_event(defines.events.on_research_finished, function(event)
+	on_research_finished(event)
 end)
 
 local starter_techs = {
@@ -162,22 +176,24 @@ local function on_force_created(event)
 	end
 
 	storage.team_samples[team_name] = starting_items
+
 	-- research starter technologies
-	for item, count in team_data["Start Inventory"]:gmatch("([^:]*): (%d*),?%s?") do
+	for technology, count in team_data["Start Inventory"]:gmatch("([^:]*): (%d*),?%s?") do
 		for _ = 1, count, 1 do
-			research_team_technology(item, event.force)
+			local researched_tech_name = research_team_technology(technology, event.force)
+			on_research_finished({
+				by_script = false,
+				name = technology,
+				research = event.force.technologies[researched_tech_name],
+				tick = 0,
+			})
 		end
 	end
-
 end
 
 script.on_event(defines.events.on_force_created, on_force_created)
 
 script.on_init(function()
-	-- pause at the start if we expect more players
-	if game.is_multiplayer() then
-		game.tick_paused = true
-	end
 	--
 	-- if settings.startup.spoilers.value == "Enter Here" then
 	-- 	error("No spoiler data provided")
@@ -188,6 +204,8 @@ script.on_init(function()
 	for team, _ in pairs(teams) do
 		table.insert(storage.active_teams, team)
 	end
+
+	storage.corpse_fix = {}
 
 	storage.slot_sample_data = {}
 	storage.team_samples = {}
@@ -289,6 +307,8 @@ script.on_event(defines.events.on_entity_died, function(event)
 		data.death_location = event.entity.position
 	end
 
+	storage.corpse_fix[event.entity.unit_number] = { team,slot }
+
 	if not storage.death_link_active then
 		local player_index = storage.team_player_slots[team].players[slot]
 		local player
@@ -306,6 +326,28 @@ script.on_event(defines.events.on_entity_died, function(event)
 
 		game_manager.trigger_death_link(responsible, team, player)
 	end
+end)
+
+script.on_event(defines.events.on_post_entity_died, function(event)
+  local had_character_corpse
+  for _, corpse in pairs(event.corpses) do
+    if corpse.type ~= "character-corpse" then
+      goto continue
+    end
+
+    had_character_corpse = true
+
+    local team,slot = table.unpack(storage.corpse_fix[event.unit_number])
+
+    local corpse_index = slot_manager.get_corpse_index(team,slot)
+    corpse.character_corpse_player_index = corpse_index
+
+      ::continue::
+  end
+
+  if had_character_corpse then
+    storage.corpse_fix[event.unit_number] = nil
+  end
 end)
 
 script.on_event(defines.events.on_player_respawned, function(event)
@@ -397,16 +439,14 @@ script.on_event(defines.events.on_console_chat, function(event)
 	if not event.player_index or event.player_index == 0 then
 		return
 	end
-
 	local shout_player = game.get_player(event.player_index)
 	assert(shout_player)
-
 	local color = shout_player.chat_color
 
 	local team = slot_manager.get_player_slot(shout_player) or { "player-messages.chat-no-team" }
 
 	for _, player in pairs(game.connected_players) do
-		if player.index == shout_player.index then
+		if player.force.index == shout_player.force.index then
 			goto continue
 		end
 

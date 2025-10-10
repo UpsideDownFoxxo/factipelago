@@ -128,7 +128,6 @@ m.grant_tech_research_rewards = function (technology)
     team_samples[sample] = (team_samples[sample] or 0) + count
   end
 
-
   for slot, _ in pairs(storage.team_player_slots[technology.force.name].players) do
     for sample,count in pairs(samples) do
       m.grant_sample(technology.force.name,slot,sample,count)

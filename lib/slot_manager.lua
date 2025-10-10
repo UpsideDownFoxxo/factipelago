@@ -3,8 +3,8 @@ local m = require("lib/per_force_players")
 
 ---@alias StashedData {quickbar_pages:number[],quickbar_slots:unknown[],death_location:MapPosition?,ticks_to_respawn:number?,color:Color,chat_color:Color,opened:unknown,force:LuaForce,tag:string,controller_type:defines.controllers,position:MapPosition,zoom:number}
 
-local function get_corpse_index(team, slot)
-	storage.current_corpse_index = storage.current_corpse_index or 10000
+m.get_corpse_index = function(team, slot)
+	storage.current_corpse_index = storage.current_corpse_index or 1000
 
 	if not storage.corpse_indices[team] or not storage.corpse_indices[team][slot] then
 		local index = storage.current_corpse_index
@@ -21,7 +21,7 @@ end
 local function unlink_corpses(player)
 	local team, slot = m.get_player_slot(player)
 
-	local stash_index = get_corpse_index(team, slot)
+	local stash_index = m.get_corpse_index(team, slot)
 
 	local corpses = game.surfaces[team].find_entities_filtered({ type = "character-corpse" })
 	for _, corpse in pairs(corpses) do
@@ -63,7 +63,7 @@ end
 local function relink_corpses(player)
 	local team, slot = m.get_player_slot(player)
 
-	local stash_index = get_corpse_index(team, slot)
+	local stash_index = m.get_corpse_index(team, slot)
 
 	local corpses = game.surfaces[team].find_entities_filtered({ type = "character-corpse" })
 	for _, corpse in pairs(corpses) do
@@ -282,6 +282,7 @@ end
 ---@param player LuaPlayer
 ---@param team string
 m.transfer_player = function(player, team)
+	local from_team, _ = m.get_player_slot(player)
 	m.disassociate_player(player)
 	local slot = m.get_or_make_empty_slot(team, player)
 
@@ -292,6 +293,12 @@ m.transfer_player = function(player, team)
 	end
 
 	m.associate_player(player, team, slot)
+
+	return {
+		player = player,
+		from_team = from_team,
+		to_team = team,
+	}
 end
 
 ---@param player_a LuaPlayer
@@ -322,5 +329,30 @@ m.swap_players = function(player_a, player_b)
 
 	m.associate_player(player_b, team_a, slot_a)
 	m.associate_player(player_a, team_b, slot_b)
+	--
+	-- player_a.print({
+	-- 	"player-messages.post-swap",
+	-- 	team_b,
+	-- 	player_b.name,
+	-- 	("%f,%f,%f"):format(player_a.color.r, player_a.color.g, player_a.color.b),
+	-- })
+	-- player_b.print({
+	-- 	"player-messages.post-swap",
+	-- 	team_a,
+	-- 	player_a.name,
+	-- 	("%f,%f,%f"):format(player_b.color.r, player_b.color.g, player_b.color.b),
+	-- })
+	--
+	return {
+		player = player_a,
+		partner = player_b,
+		from_team = team_a,
+		to_team = team_b,
+	}, {
+		player = player_b,
+		partner = player_a,
+		from_team = team_b,
+		to_team = team_a,
+	}
 end
 return m

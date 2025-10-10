@@ -13,12 +13,11 @@ m.swap_random_players = function(team_a, team_b)
 
 		if not player_a or not player_b then
 			-- one of the two teams does not actually have a player
-			return false
+			return
 		end
 
 		if player_a.index ~= player_b.index then
-			slot_manager.swap_players(player_a, player_b)
-			return true
+			return slot_manager.swap_players(player_a, player_b)
 		end
 	end
 end
@@ -49,7 +48,7 @@ m.swap_random_teams = function()
 	end
 
 	print("swapping " .. team_a .. " and " .. team_b)
-	m.swap_random_players(team_a, team_b)
+	return m.swap_random_players(team_a, team_b)
 end
 
 m.balance_teams = function()
@@ -93,7 +92,7 @@ m.balance_teams = function()
 	local max_player = slot_manager.get_random_player(max_team)
 	assert(max_player)
 
-	slot_manager.transfer_player(max_player, min_team)
+	return slot_manager.transfer_player(max_player, min_team)
 end
 
 ---@param player LuaPlayer
@@ -114,11 +113,7 @@ m.add_player = function(player)
 		slot = slot_preference[2]
 	else
 		team = slot_manager.get_least_populated_team()
-		slot, new = slot_manager.get_or_make_empty_slot(team, player)
-
-		if new then
-			samples.catch_up_slot(team, slot)
-		end
+		slot = slot_manager.get_or_make_empty_slot(team, player)
 	end
 
 	slot_manager.associate_player(player, team, slot)
@@ -215,6 +210,7 @@ m.trigger_death_link = function(initial_dead_player_name, from_team, initial_dea
 					assert(player)
 
 					if should_die then
+						deaths = deaths + 1
 						print("killing " .. player.name)
 						player.print({ "player-messages.death-link", initial_dead_player_name, from_team })
 					else
@@ -226,7 +222,6 @@ m.trigger_death_link = function(initial_dead_player_name, from_team, initial_dea
 				if should_die then
 					print("killing character " .. team .. ":" .. slot)
 					character.die()
-					deaths = deaths + 1
 					characters[slot] = nil
 				end
 			end
@@ -240,14 +235,54 @@ m.trigger_death_link = function(initial_dead_player_name, from_team, initial_dea
 
 	if deaths == all_players then
 		initial_dead_player.print({ "player-messages.death-link-report-wipeout", deaths })
-	else
+	elseif deaths > 0 then
 		initial_dead_player.print({ "player-messages.death-link-report", deaths })
 	end
 end
 
 m.swap_handler = function()
-	m.swap_random_teams()
-	m.balance_teams()
+	local p_a, p_b = m.swap_random_teams()
+	---@type table<integer,{player:LuaPlayer,partner:LuaPlayer?,from_team:string,to_team:string}>
+	local moves = {}
+	if p_a and p_b then
+		moves[p_a.player.index] = p_a
+		moves[p_b.player.index] = p_b
+	end
+
+	local p_c = m.balance_teams()
+
+	if p_c then
+		if moves[p_c.player.index] then
+			local move = moves[p_c.player.index]
+
+			move.to_team = p_c.to_team
+			move.partner = nil
+		else
+			moves[p_c.player.index] = p_c
+		end
+	end
+
+	for player_index, move in pairs(moves) do
+		local player = game.get_player(player_index)
+		assert(player)
+
+		local inactive_placeholder = { "player-messages.inactive-partner" }
+
+		if move.from_team == move.to_team then
+			player.print({
+				"player-messages.same-team-move",
+				move.partner and move.partner.name or inactive_placeholder,
+				("%f,%f,%f"):format(player.color.r, player.color.g, player.color.b),
+			})
+		else
+			player.print({
+				"player-messages.cross-team-move",
+				move.partner and move.partner.name or inactive_placeholder,
+				("%f,%f,%f"):format(player.color.r, player.color.g, player.color.b),
+				move.to_team,
+			})
+		end
+	end
 end
 
 script.on_nth_tick(240, samples.swample_update_handler)

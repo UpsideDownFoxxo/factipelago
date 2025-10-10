@@ -179,6 +179,8 @@ m.research_progressive_tech = function(key, force)
 			return tech
 		end
 	end
+
+	print("Requested unavailable technology level for " .. key)
 end
 
 return m

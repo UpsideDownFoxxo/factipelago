@@ -173,9 +173,48 @@ m.associate_player = function(player, team, slot)
 	player.chat_color = player_data.chat_color
 	player.tag = player_data.tag
 
+	local ui_types = {
+		"button",
+		"sprite_button",
+		"checkbox",
+		"flow",
+		"frame",
+		"label",
+		"line",
+		"progressbar",
+		"table",
+		"textfield",
+		"radiobutton",
+		"sprite",
+		"scroll-pane",
+		"drop-down",
+		"list-box",
+		"camera",
+		"choose-elem-button",
+		"text-box",
+		"slider",
+		"minimap",
+		"entity-preview",
+		"empty-widget",
+		"tabbed-pane",
+		"tab",
+		"switch",
+	}
+
+	local ui_set = {}
+	for _, value in pairs(ui_types) do
+		ui_set[value] = true
+	end
+
 	if player_data.opened == "self" then
 		player_data.opened = player
-	elseif player_data.opened and (not player_data.opened.valid or player_data.opened.player_index ~= player.index) then
+	elseif
+		player_data.opened
+		and (
+			not player_data.opened.valid
+			or (ui_set[player_data.opened.type] and player_data.opened.player_index ~= player.index)
+		)
+	then
 		player_data.opened = nil
 	end
 

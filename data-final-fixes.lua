@@ -1,8 +1,8 @@
 local util = require("util")
-if settings.startup.spoilers.value == "Enter Here" then
-	-- no sense in doing anything if startup setting is default
-	return
-end
+-- if settings.startup.spoilers.value == "Enter Here" then
+-- 	-- no sense in doing anything if startup setting is default
+-- 	return
+-- end
 
 local locale = require("lib/locale")
 

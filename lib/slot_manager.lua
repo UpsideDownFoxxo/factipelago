@@ -175,7 +175,7 @@ m.associate_player = function(player, team, slot)
 
 	if player_data.opened == "self" then
 		player_data.opened = player
-	elseif player_data.opened and not player_data.opened.valid then
+	elseif player_data.opened and (not player_data.opened.valid or player_data.opened.player_index ~= player.index) then
 		player_data.opened = nil
 	end
 

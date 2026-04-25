@@ -121,9 +121,6 @@ m.disassociate_player = function(player)
 	if old_character then
 		old_character.color = player.color
 	end
-
-	print(serpent.block(storage.team_player_slots))
-	print(serpent.block(storage.stashed_character_data))
 end
 
 ---@param player LuaPlayer
@@ -212,6 +209,7 @@ m.associate_player = function(player, team, slot)
 		player_data.opened
 		and (
 			not player_data.opened.valid
+			-- player has opened a custom GUI, we cannot restore it
 			or (ui_set[player_data.opened.type] and player_data.opened.player_index ~= player.index)
 		)
 	then
@@ -322,7 +320,9 @@ end
 ---@param team string
 m.transfer_player = function(player, team)
 	local from_team, _ = m.get_player_slot(player)
+
 	m.disassociate_player(player)
+
 	local slot = m.get_or_make_empty_slot(team, player)
 
 	local slot_preference = storage.slot_preferences[player.index]

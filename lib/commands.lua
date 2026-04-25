@@ -85,6 +85,11 @@ commands.add_command("swap_interval", { "command-help.swap_interval" }, function
 		return
 	end
 	game_manager.set_swap_interval(math.ceil(new_interval))
+
+	local player = game.get_player(event.player_index)
+	if player then
+		player.print({ "player-messages.updated-swap-interval", math.ceil(new_interval) })
+	end
 end)
 
 -- all players
@@ -93,4 +98,5 @@ commands.add_command("tag", { "command-help.tag" }, function(event)
 	assert(player)
 
 	player.tag = event.parameter or ""
+	player.print({ "player-messages.updated-tag", player.tag })
 end)

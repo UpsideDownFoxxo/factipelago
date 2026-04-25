@@ -79,11 +79,13 @@ commands.add_command("swap_interval", { "command-help.swap_interval" }, function
 	if not admin_check(event) then
 		return
 	end
-	local new_interval = tonumber(event.parameter or "")
+	event.parameter = event.parameter or ""
+	local new_interval = helpers.evaluate_expression(event.parameter)
 	if not new_interval then
-		game.players[event.player_index].print("Failed to parse number '" .. event.parameter .. "'")
+		game.players[event.player_index].print("Failed to parse expression'" .. event.parameter .. "'")
 		return
 	end
+
 	game_manager.set_swap_interval(math.ceil(new_interval))
 
 	local player = game.get_player(event.player_index)
